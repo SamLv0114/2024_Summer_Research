@@ -23,6 +23,7 @@ def parse_time(curr_time):
             return (datetime(2024, 1, 1, h, m, s) + timedelta(days=h // 24)).time()
 
 
+# function to filter out trips that have a departure time after 12am and end before 5am
 def filter_trip(trip):
     trip_start_time = trip["departure_time"].iloc[0]
     trip_end_time = trip["arrival_time"].iloc[-1]
@@ -49,12 +50,11 @@ trips_with_stops = f'{base_path}/merged_trips.txt'
 
 merged_trips.to_csv(trips_with_stops, index=False)
 
-
 filtered_trips = merged_trips.groupby('trip_id').apply(filter_trip)
 
-filtered_path = f'{base_path}/filtered_trips.txt'
-
 filtered_trips['stop_sequence'] = filtered_trips['stop_sequence'].astype(int)
+
+filtered_path = f'{base_path}/filtered_trips.txt'
 
 filtered_trips = filtered_trips.drop_duplicates(subset='trip_id', keep='first')
 
@@ -62,6 +62,4 @@ filtered_trips = filtered_trips.drop(columns=['stop_id', 'arrival_time', 'depart
 
 filtered_trips.to_csv(filtered_path, index=False)
 
-print(filtered_trips.groupby('service_id').count())
-print(trips.groupby('service_id').count())
 
