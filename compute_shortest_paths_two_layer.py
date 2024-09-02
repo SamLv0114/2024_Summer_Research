@@ -1,13 +1,7 @@
 import pandas as pd
-import os
 import math
 import numpy as np
 import networkx as nx
-import my_nx as my_nx
-import matplotlib.pyplot as plt
-from datetime import datetime,time, timedelta
-import pickle
-from process_transfers import get_merged_stops, get_merged_stops_names
 from heapq import heappop, heappush
 import geopandas as gpd
 
@@ -19,7 +13,7 @@ def compute_shortest_path(G, source, target, transfer_time=6, stop_time=1):
         distances[source] = 0
         
         
-        pq = [(0, source, None)]  # (distance, current_node, current_edge_routes)
+        pq = [(0, source, None)]  # (distance, current_node, edge_routes)
         
         # keep track of the previous stop of the shortest path
         previous_nodes = {node: None for node in G.nodes()}
@@ -38,11 +32,19 @@ def compute_shortest_path(G, source, target, transfer_time=6, stop_time=1):
                 weight = G[current_node][neighbor]['travel_time']
                 edge_routes = set(G[current_node][neighbor]['routes'])
                 
+                
                 # use to see if a transfer is needed
                 if current_edge_routes and not current_edge_routes.intersection(edge_routes):
-                    random_noise = np.random.uniform(0, 5)
-                    weight += transfer_time  # Add transfer time if no common routes
-                    weight += random_noise
+                    # If it's a transfer between two layers, the transfer time should be longer
+                    if G[current_node][neighbor].get('layer') == 'transfer':
+                        noise_to_waiting = np.random.uniform(5, 10)
+                        weight = weight + transfer_time + noise_to_waiting
+                        
+                    # If the transfer is within one layer, the transfer time should be shorter
+                    else:
+                        random_noise = np.random.uniform(0, 5)
+                        weight = weight + transfer_time + random_noise # Add transfer time if no common routes
+        
 
                 new_distance = current_distance + weight + stop_time
                 
